@@ -11,6 +11,9 @@ coverage/
 .env.*
 !.env.example
 
+# Local dev visuals (not part of the app)
+artifact/
+
 # AWS SAM (Phase 2)
 .aws-sam/
 

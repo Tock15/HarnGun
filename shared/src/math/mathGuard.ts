@@ -1,0 +1,37 @@
+import type { Satang } from '../types';
+import type { BillTotals } from './calcTotals';
+
+/**
+ * MATCH: computed total equals the printed total.
+ * ROUNDING: off by at most 1 satang (POS rounding differences) — accepted.
+ * MISMATCH: off by more; something was probably misread.
+ * INCOMPLETE: an item has no price, or there is no printed total to compare against.
+ */
+export type GuardStatus = 'MATCH' | 'ROUNDING' | 'MISMATCH' | 'INCOMPLETE';
+
+export const ROUNDING_TOLERANCE: Satang = 1;
+
+export interface GuardResult {
+  status: GuardStatus;
+  computedTotal: Satang;
+  scannedTotal: Satang | null;
+  /** computedTotal − scannedTotal, or null when INCOMPLETE. */
+  difference: Satang | null;
+}
+
+/** Compares the computed grand total with the total printed on the receipt (ADR-007). */
+export function checkMathGuard(totals: BillTotals, scannedGrandTotal: Satang | null): GuardResult {
+  const computedTotal = totals.grandTotal;
+  if (totals.hasUnpricedItems || scannedGrandTotal === null) {
+    return { status: 'INCOMPLETE', computedTotal, scannedTotal: scannedGrandTotal, difference: null };
+  }
+  const difference = computedTotal - scannedGrandTotal;
+  const status: GuardStatus =
+    difference === 0 ? 'MATCH' : Math.abs(difference) <= ROUNDING_TOLERANCE ? 'ROUNDING' : 'MISMATCH';
+  return { status, computedTotal, scannedTotal: scannedGrandTotal, difference };
+}
+
+/** Settlement is only allowed when the totals agree (within rounding). */
+export function guardAllowsSettlement(guard: GuardResult): boolean {
+  return guard.status === 'MATCH' || guard.status === 'ROUNDING';
+}

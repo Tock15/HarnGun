@@ -44,6 +44,7 @@
 ### 4.1. Money Representation
 * All money is stored and calculated as **integer satang** (฿364.87 → `36487`). No floating-point Baht arithmetic anywhere in the engine.
 * Conversion happens only at the boundaries: when parsing AI output (decimal Baht → satang) and when rendering to the UI / PromptPay payload (satang → decimal Baht).
+* Rates are stored as integer **basis points** (1% = `100`, so 7% = `700`, 10% = `1000`), keeping percentage math integer-only too.
 * Percentage calculations round to the nearest satang (half-up) at each printed step (SC amount, VAT amount), mirroring how POS systems print receipts.
 
 ### 4.2. Bill Calculation Config
@@ -51,8 +52,8 @@ Thai receipts differ in how they order discounts, service charge, and VAT. Each 
 
 | Setting | Values | Default |
 |---|---|---|
-| `serviceChargePct` | 0 / 10 / custom | 10 if a service charge line is detected, else 0 |
-| `vatPct` | 0 / 7 / custom | 7 if a VAT line is detected, else 0 |
+| `serviceChargeRate` | 0% / 10% / custom | 10% if a service charge line is detected, else 0 |
+| `vatRate` | 0% / 7% / custom | 7% if a VAT line is detected, else 0 |
 | `vatMode` | `EXCLUSIVE` / `INCLUSIVE` | `EXCLUSIVE` unless the receipt says VAT is included |
 | `discountTiming` | `BEFORE_SC` / `AFTER_SC` | `BEFORE_SC` |
 
@@ -90,7 +91,8 @@ Let `Subtotal` be the sum of item prices (after item-level discounts) and `Disco
 * **Largest-remainder method (integer-only):** compute each share as `floor(Grand Total × personSubtotal / Subtotal)`, then give the leftover satang one at a time to the participants with the largest remainders. Ties are broken by participant order (deterministic, so client and server always agree).
 * The same method is used for splitting a single item among claimants, and for the per-person SC / VAT / discount breakdown lines shown on settlement cards.
 * Result: the sum of individual shares **strictly equals** the receipt Grand Total, to the satang.
-* Settlement requires every item to be claimed. The Host can use "Split remaining among everyone" to assign unclaimed items evenly.
+* **The amount split is the printed receipt total**, so the shares add up to exactly what the Host paid. This applies only when the Math Guard reports a match or a difference of at most 1 satang (a POS rounding difference); any extra satang appears on a person's "rounding" line.
+* Settlement requires every item to be claimed and the Math Guard to pass. The Host can use "Split remaining among everyone" to assign unclaimed items evenly.
 
 ---
 

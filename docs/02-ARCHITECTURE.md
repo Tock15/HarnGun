@@ -98,7 +98,7 @@ All money attributes are **integer satang**.
 | Entity | PK | SK | Key Attributes |
 |---|---|---|---|
 | **User Profile** (Phase 2) | `USER#<userId>` | `PROFILE` | `email`, `displayName`, `promptPayId`, `promptPayType` (PHONE / NATIONAL_ID), `createdAt` |
-| **Bill** | `BILL#<billId>` | `METADATA` | `hostId`, `hostName`, `promptPayId`, `promptPayType`, `title`, `restaurantName`, `status` (DRAFT, ACTIVE, SETTLED), `version`, `calcConfig` (`serviceChargePct`, `vatPct`, `vatMode`, `discountTiming`), `billDiscounts`, `roundingAdjustment`, `scannedGrandTotal`, `receiptImageKey`, `createdAt`, `updatedAt`, `GSI1PK=HOST#<hostId>`, `GSI1SK=<createdAt>` |
+| **Bill** | `BILL#<billId>` | `METADATA` | `hostId`, `hostName`, `promptPayId`, `promptPayType`, `title`, `restaurantName`, `status` (DRAFT, ACTIVE, SETTLED), `version`, `calcConfig` (`serviceChargeRate`, `vatRate` in basis points, `vatMode`, `discountTiming`), `billDiscounts`, `roundingAdjustment`, `scannedGrandTotal`, `receiptImageKey`, `createdAt`, `updatedAt`, `GSI1PK=HOST#<hostId>`, `GSI1SK=<createdAt>` |
 | **Item** | `BILL#<billId>` | `ITEM#<itemId>` | `name`, `quantity`, `unitPrice`, `totalPrice`, `itemDiscount`, `modifiers`, `needsReview`, `parentItemId` (set when unpacked), `sortOrder` |
 | **Participant** | `BILL#<billId>` | `PARTICIPANT#<participantId>` | `name`, `colorIndex`, `isHost`, `isPaid`, `createdAt` |
 | **Claim** | `BILL#<billId>` | `CLAIM#<itemId>#<participantId>` | `createdAt`, `createdBy` |

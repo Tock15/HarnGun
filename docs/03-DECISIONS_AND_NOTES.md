@@ -86,9 +86,12 @@
 HarnGun/
 ├── docs/                       # PRD, Architecture, and Decision Records
 ├── shared/                     # Isomorphic TypeScript domain library (no I/O)
-│   ├── types/                  # Bill, Item, Participant, Claim, CalcConfig interfaces
-│   ├── math/                   # SC + VAT engine (calc modes), satang allocation, penny balancing
-│   └── promptpay/              # EMVCo CRC-16 payload generation logic
+│   ├── src/
+│   │   ├── types/              # Bill, Item, Participant, Claim, CalcConfig interfaces
+│   │   ├── math/               # SC + VAT engine (calc modes), satang allocation, penny balancing
+│   │   └── promptpay/          # EMVCo CRC-16 payload generation logic
+│   ├── test/                   # Tests mirroring src/ (test/math, test/promptpay) + test/helpers
+│   └── fixtures/               # Mock receipt JSON (used by tests and MOCK_AI=true)
 ├── client/                     # Tier 1: Frontend SPA (React + Vite + TypeScript)
 │   ├── Dockerfile              # Multi-stage: node build → nginx:alpine
 │   ├── nginx.conf              # SPA serving + /api and storage reverse proxy
@@ -98,7 +101,6 @@ HarnGun/
 │       └── styles/             # Vanilla CSS / CSS Tokens (mobile-first, thermal receipt theme)
 ├── server/                     # Tier 2: Backend (TypeScript)
 │   ├── Dockerfile              # Multi-stage: build → node:22-alpine runtime
-│   ├── fixtures/               # Mock receipt JSON for MOCK_AI=true
 │   └── src/
 │       ├── core/               # Handlers: createUploadUrl, parseReceipt, getBill, updateBill, claimItem
 │       ├── ports/              # BillRepository, ImageStorage, ReceiptParser, AuthProvider interfaces
