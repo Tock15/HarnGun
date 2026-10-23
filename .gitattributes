@@ -1,0 +1,10 @@
+# Normalize all text files to LF so shell scripts and configs work inside Linux containers
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.pdf binary
