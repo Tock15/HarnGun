@@ -2,3 +2,4 @@
 export type * from './types/index';
 export * from './math/index';
 export * from './promptpay/index';
+export * from './receipt/index';

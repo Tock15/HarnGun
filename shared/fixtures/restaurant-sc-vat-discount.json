@@ -1,0 +1,26 @@
+{
+  "restaurantName": "ร้านอาหาร ริมน้ำ",
+  "table": "T12",
+  "date": "2026-10-20",
+  "items": [
+    { "id": "item-1", "name": "ต้มยำกุ้งน้ำข้น", "quantity": 1, "unitPrice": 280.00, "totalPrice": 280.00, "modifiers": ["เผ็ดกลาง"], "needsReview": false },
+    { "id": "item-2", "name": "ปลากะพงนึ่งมะนาว", "quantity": 1, "unitPrice": 450.00, "totalPrice": 450.00, "modifiers": [], "needsReview": false },
+    { "id": "item-3", "name": "ผัดผักบุ้งไฟแดง", "quantity": 1, "unitPrice": 120.00, "totalPrice": 120.00, "modifiers": [], "needsReview": false },
+    { "id": "item-4", "name": "ข้าวสวย", "quantity": 4, "unitPrice": 20.00, "totalPrice": 80.00, "modifiers": [], "needsReview": false },
+    { "id": "item-5", "name": "Singha Beer", "quantity": 3, "unitPrice": 95.00, "totalPrice": 285.00, "modifiers": [], "needsReview": false },
+    { "id": "item-6", "name": "น้ำเปล่า", "quantity": 2, "unitPrice": 20.00, "totalPrice": 40.00, "modifiers": [], "needsReview": false }
+  ],
+  "financials": {
+    "subtotal": 1255.00,
+    "discounts": [
+      { "label": "ส่วนลดสมาชิก 10%", "type": "percent", "value": 10.0, "amount": 125.50 }
+    ],
+    "serviceChargeRate": 10.0,
+    "serviceChargeAmount": 112.95,
+    "vatRate": 7.0,
+    "vatAmount": 86.97,
+    "isVatInclusive": false,
+    "roundingAdjustment": null,
+    "grandTotal": 1329.42
+  }
+}

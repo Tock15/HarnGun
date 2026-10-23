@@ -14,6 +14,9 @@ coverage/
 # Local dev visuals (not part of the app)
 artifact/
 
+# Project docs (kept local)
+docs/
+
 # AWS SAM (Phase 2)
 .aws-sam/
 

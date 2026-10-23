@@ -1,0 +1,22 @@
+{
+  "restaurantName": "ร้านข้าวแกง ป้าแดง",
+  "table": "3",
+  "date": "2026-10-22",
+  "items": [
+    { "id": "item-1", "name": "กะเพราหมูกรอบ", "quantity": 1, "unitPrice": 80.00, "totalPrice": 80.00, "modifiers": ["เผ็ดน้อย", "+ ไข่ดาว"], "needsReview": false },
+    { "id": "item-2", "name": "ข้าวผัดกุ้ง", "quantity": 1, "unitPrice": 70.00, "totalPrice": 70.00, "modifiers": ["ไม่ใส่ต้นหอม"], "needsReview": false },
+    { "id": "item-3", "name": "ชาเย็น", "quantity": 1, "unitPrice": null, "totalPrice": null, "modifiers": ["หวานน้อย"], "needsReview": true },
+    { "id": "item-4", "name": "ต้มจืดเต้าหู้หมูสับ", "quantity": 1, "unitPrice": 90.00, "totalPrice": 90.00, "modifiers": [], "needsReview": false }
+  ],
+  "financials": {
+    "subtotal": 285.00,
+    "discounts": [],
+    "serviceChargeRate": null,
+    "serviceChargeAmount": null,
+    "vatRate": null,
+    "vatAmount": null,
+    "isVatInclusive": null,
+    "roundingAdjustment": null,
+    "grandTotal": 285.00
+  }
+}

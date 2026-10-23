@@ -1,0 +1,22 @@
+{
+  "restaurantName": "Café ตัวอย่าง",
+  "table": null,
+  "date": "2026-10-21",
+  "items": [
+    { "id": "item-1", "name": "ชาเย็น", "quantity": 1, "unitPrice": 65.00, "totalPrice": 65.00, "modifiers": ["หวานน้อย"], "needsReview": false },
+    { "id": "item-2", "name": "ลาเต้เย็น", "quantity": 1, "unitPrice": 85.00, "totalPrice": 85.00, "modifiers": [], "needsReview": false },
+    { "id": "item-3", "name": "ครัวซองต์เนยสด", "quantity": 1, "unitPrice": 75.00, "totalPrice": 75.00, "modifiers": [], "needsReview": false },
+    { "id": "item-4", "name": "บราวนี่", "quantity": 2, "unitPrice": 55.00, "totalPrice": 110.00, "modifiers": [], "needsReview": false }
+  ],
+  "financials": {
+    "subtotal": 335.00,
+    "discounts": [],
+    "serviceChargeRate": null,
+    "serviceChargeAmount": null,
+    "vatRate": 7.0,
+    "vatAmount": 21.92,
+    "isVatInclusive": true,
+    "roundingAdjustment": null,
+    "grandTotal": 335.00
+  }
+}
