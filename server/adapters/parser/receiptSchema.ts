@@ -4,7 +4,12 @@ import { z } from 'zod';
 // The extraction schema of 04-THAI_RECEIPT_PATTERNS.md §3. One definition serves twice:
 // as Bedrock's tool input schema (JSON Schema) and to validate what the model sends back.
 
-const baht = z.number().describe('Decimal Baht exactly as printed. null if not printed or illegible; never guess.');
+// ฿10M cap, as for typed-in amounts (core/schemas.ts): a misread huge number would make the bill unreadable.
+const baht = z
+  .number()
+  .min(-10_000_000)
+  .max(10_000_000)
+  .describe('Decimal Baht exactly as printed. null if not printed or illegible; never guess.');
 
 export const receiptSchema = z.object({
   restaurantName: z.string().nullable(),

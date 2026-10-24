@@ -44,6 +44,13 @@ describe('BedrockParser', () => {
     await expect(parserFor(client).parse(image)).rejects.toThrow(/invalid receipt/);
   });
 
+  it('rejects a misread amount too big for the math engine', async () => {
+    const huge = { ...receipt, financials: { ...receipt.financials, grandTotal: 1e20 } };
+    const { client } = fakeClient([{ toolUse: { toolUseId: 't1', name: 'record_receipt', input: huge } }]);
+
+    await expect(parserFor(client).parse(image)).rejects.toThrow(ReceiptParseError);
+  });
+
   it('accepts every fixture, so mock and live output share one shape', () => {
     for (const fixture of Object.values(receiptFixtures)) expect(receiptSchema.safeParse(fixture).success).toBe(true);
   });
