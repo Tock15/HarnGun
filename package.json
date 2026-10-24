@@ -13,10 +13,12 @@
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
     "test:integration": "vitest run --project integration",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test:ui": "vitest --ui --project unit"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "@vitest/ui": "^5.0.5",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   }
