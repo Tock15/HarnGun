@@ -40,7 +40,7 @@ export interface SplitResult {
 
 export type SplitInput = Pick<
   Bill,
-  'items' | 'participants' | 'claims' | 'calcConfig' | 'discounts' | 'roundingAdjustment' | 'scannedGrandTotal'
+  'items' | 'participants' | 'claims' | 'calcConfig' | 'discounts' | 'roundingAdjustment' | 'scannedGrandTotal' | 'receiptImageKey'
 >;
 
 /**
@@ -53,7 +53,8 @@ export type SplitInput = Pick<
  */
 export function computeSplit(bill: SplitInput): SplitResult {
   const totals = calcTotals(bill);
-  const guard = checkMathGuard(totals, bill.scannedGrandTotal);
+  const typedByHand = bill.receiptImageKey === null && bill.items.length > 0;
+  const guard = checkMathGuard(totals, bill.scannedGrandTotal, typedByHand);
   const guardPasses = guardAllowsSettlement(guard);
   const splitTotal = guardPasses && bill.scannedGrandTotal !== null ? bill.scannedGrandTotal : totals.grandTotal;
 

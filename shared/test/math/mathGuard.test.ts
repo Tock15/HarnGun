@@ -30,4 +30,14 @@ describe('checkMathGuard', () => {
     expect(checkMathGuard(unpriced, 36487).status).toBe('INCOMPLETE');
     expect(guardAllowsSettlement(checkMathGuard(totals, null))).toBe(false);
   });
+
+  it('trusts the computed total on a hand-typed bill with no printed total', () => {
+    const guard = checkMathGuard(totals, null, true);
+    expect(guard).toEqual({ status: 'NO_RECEIPT', computedTotal: 36487, scannedTotal: null, difference: null });
+    expect(guardAllowsSettlement(guard)).toBe(true);
+    // A typed printed total is still checked, and a missing price still blocks.
+    expect(checkMathGuard(totals, 39487, true).status).toBe('MISMATCH');
+    const unpriced = calcTotals(makeBill({ items: [makeItem(25000), makeItem(null)] }));
+    expect(checkMathGuard(unpriced, null, true).status).toBe('INCOMPLETE');
+  });
 });
