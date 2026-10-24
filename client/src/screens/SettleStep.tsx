@@ -5,7 +5,7 @@ import { initial, penStyle } from '../pens';
 import type { BillProps } from './BillScreen';
 import { GuardStamp } from './ReviewStep';
 
-export function SettleStep({ view, send, busy }: BillProps) {
+export function SettleStep({ view, send }: BillProps) {
   const { bill, split } = view;
   const [copied, setCopied] = useState(false);
   const shareOf = (p: Participant) => split.shares.find((s) => s.participantId === p.id)!;
@@ -41,7 +41,7 @@ export function SettleStep({ view, send, busy }: BillProps) {
       )}
 
       {bill.participants.map((p) => (
-        <PersonCard key={p.id} bill={bill} person={p} share={shareOf(p)} showQr={split.canSettle} busy={busy}
+        <PersonCard key={p.id} bill={bill} person={p} share={shareOf(p)} showQr={split.canSettle}
           onPaid={(isPaid) => send('PATCH', `/participants/${p.id}`, { isPaid })} />
       ))}
 
@@ -50,8 +50,8 @@ export function SettleStep({ view, send, busy }: BillProps) {
   );
 }
 
-function PersonCard({ bill, person, share, showQr, busy, onPaid }: {
-  bill: Bill; person: Participant; share: PersonShare; showQr: boolean; busy: boolean; onPaid: (isPaid: boolean) => void;
+function PersonCard({ bill, person, share, showQr, onPaid }: {
+  bill: Bill; person: Participant; share: PersonShare; showQr: boolean; onPaid: (isPaid: boolean) => void;
 }) {
   const vatAdded = bill.calcConfig.vatMode === 'EXCLUSIVE';
   return (
@@ -78,7 +78,7 @@ function PersonCard({ bill, person, share, showQr, busy, onPaid }: {
             <div className="tear-dashed-line tear-label">✂ TEAR HERE ✂</div>
             {showQr && <PromptPayQr bill={bill} amount={share.total} />}
             <label className="inline paid">
-              <input type="checkbox" checked={person.isPaid} disabled={busy} onChange={(e) => onPaid(e.target.checked)} /> Paid
+              <input type="checkbox" checked={person.isPaid} onChange={(e) => onPaid(e.target.checked)} /> Paid
             </label>
           </>
         )}

@@ -13,6 +13,7 @@ coverage/
 
 # Local dev visuals (not part of the app)
 artifact/
+.playwright-mcp/
 
 # Project docs (kept local)
 docs/

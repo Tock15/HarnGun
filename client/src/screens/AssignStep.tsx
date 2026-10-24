@@ -43,7 +43,7 @@ export function AssignStep({ view, send, busy }: BillProps) {
         <button disabled={busy}>Add</button>
       </form>
       {pen && !pen.isHost && (
-        <button className="link danger" disabled={busy} onClick={() => send('DELETE', `/participants/${pen.id}`)}>
+        <button className="link danger" onClick={() => send('DELETE', `/participants/${pen.id}`)}>
           Remove {pen.name}
         </button>
       )}
@@ -59,7 +59,7 @@ export function AssignStep({ view, send, busy }: BillProps) {
               const mine = claimants.some((p) => p.id === pen?.id);
               return (
                 <li key={item.id}>
-                  <button className="claim-row" style={style} aria-pressed={mine} disabled={busy} onClick={() => toggle(item.id)}>
+                  <button className="claim-row" style={style} aria-pressed={mine} onClick={() => toggle(item.id)}>
                     <span className="item-name">
                       {item.quantity !== 1 && `${item.quantity} × `}
                       {item.name}

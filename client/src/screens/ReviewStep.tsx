@@ -78,11 +78,11 @@ export function ReviewStep({ view, send, preview, busy }: BillProps) {
               {item.itemDiscount > 0 && <div className="modifiers">discount −{formatBaht(item.itemDiscount)}</div>}
               <div className="item-actions">
                 {canUnpack(item) && (
-                  <button className="link" disabled={busy} onClick={() => send('POST', `/items/${item.id}/unpack`)}>
+                  <button className="link" onClick={() => send('POST', `/items/${item.id}/unpack`)}>
                     Split into {item.quantity} singles
                   </button>
                 )}
-                <button className="link danger" disabled={busy} onClick={() => send('DELETE', `/items/${item.id}`)}>
+                <button className="link danger" onClick={() => send('DELETE', `/items/${item.id}`)}>
                   Remove
                 </button>
               </div>
