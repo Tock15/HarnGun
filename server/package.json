@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch express/server.ts",
+    "dev": "tsx watch --env-file=dev.env express/server.ts",
     "start": "tsx express/server.ts",
     "typecheck": "tsc -p tsconfig.json"
   },

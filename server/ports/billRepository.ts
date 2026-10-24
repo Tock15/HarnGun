@@ -39,6 +39,9 @@ export interface BillRepository {
   get(billId: string): Promise<Bill | null>;
   /** Cheap METADATA-only read for polling. Null if the bill does not exist. */
   getVersion(billId: string): Promise<number | null>;
-  /** Applies the changes atomically. Returns the new version, or null if the bill does not exist. */
-  update(billId: string, changes: BillChanges): Promise<number | null>;
+  /**
+   * Applies the changes atomically. False if the bill does not exist (or is an expired DRAFT).
+   * One change may not touch the same record twice (e.g. put and delete the same item).
+   */
+  update(billId: string, changes: BillChanges): Promise<boolean>;
 }

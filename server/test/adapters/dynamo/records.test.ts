@@ -1,34 +1,6 @@
-import { billDraftFromReceipt, type Bill } from '@harngun/shared';
-import { receiptFixtures } from '@harngun/shared/fixtures';
 import { describe, expect, it } from 'vitest';
 import { fromRecords, metadataRecord, toRecords } from '../../../adapters/dynamo/records';
-
-function sampleBill(): Bill {
-  const draft = billDraftFromReceipt(receiptFixtures['restaurant-sc-vat-discount']!);
-  const [first, second, ...rest] = draft.items;
-  return {
-    id: 'b-1',
-    version: 3,
-    status: 'ACTIVE',
-    title: 'Friday dinner',
-    host: { id: 'h-1', name: 'Koses', promptPayId: '0812345678', promptPayType: 'PHONE' },
-    ...draft,
-    items: [first!, { ...first!, id: 'unit-1', parentItemId: first!.id, sortOrder: 0.5 }, second!, ...rest],
-    // Ids deliberately sort opposite to join order.
-    participants: [
-      { id: 'z-host', name: 'Koses', colorIndex: 0, isHost: true, isPaid: true, sortOrder: 0 },
-      { id: 'a-ann', name: 'แอน', colorIndex: 1, isHost: false, isPaid: false, sortOrder: 1 },
-    ],
-    claims: [
-      { itemId: first!.id, participantId: 'z-host' },
-      { itemId: first!.id, participantId: 'a-ann' },
-      { itemId: second!.id, participantId: 'a-ann' },
-    ],
-    receiptImageKey: 'receipts/b-1.jpg',
-    createdAt: '2026-10-24T12:00:00.000Z',
-    updatedAt: '2026-10-24T12:05:00.000Z',
-  };
-}
+import { sampleBill } from '../../helpers/sampleBill';
 
 // What a Query returns: records sorted by SK.
 const bySk = <T extends { SK: string }>(records: T[]) => [...records].sort((a, b) => (a.SK < b.SK ? -1 : 1));

@@ -1,0 +1,16 @@
+# Development only: the two data containers with ports published, for `npm run dev -w server`
+# and `npm run test:integration`. The full four-service stack is docker-compose.yml (Day 4).
+services:
+  database:
+    image: amazon/dynamodb-local:3.3.1
+    command: -jar DynamoDBLocal.jar -sharedDb -inMemory
+    ports:
+      - "8000:8000"
+
+  storage:
+    image: rustfs/rustfs:1.0.1
+    environment:
+      RUSTFS_ACCESS_KEY: harngun-dev
+      RUSTFS_SECRET_KEY: harngun-dev-secret
+    ports:
+      - "9000:9000"
