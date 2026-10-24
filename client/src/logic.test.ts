@@ -3,6 +3,23 @@ import { describe, expect, it } from 'vitest';
 import { parseDecimal } from './DecimalInput';
 import { parseRoute } from './route';
 import { summaryText } from './screens/SettleStep';
+import { newestView } from './useBill';
+import type { BillView } from './api';
+
+describe('newestView', () => {
+  const at = (version: number) => ({ bill: { version } }) as BillView;
+
+  it('ignores a reply older than what is on screen', () => {
+    expect(newestView(at(5), at(4)).bill.version).toBe(5);
+    expect(newestView(at(4), at(5)).bill.version).toBe(5);
+    expect(newestView(null, at(1)).bill.version).toBe(1);
+  });
+
+  it('takes an equal-version reply, so a refetch drops the local preview', () => {
+    const reply = at(5);
+    expect(newestView(at(5), reply)).toBe(reply);
+  });
+});
 
 describe('parseRoute', () => {
   it('reads the bill id and step from the hash', () => {

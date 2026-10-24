@@ -1,4 +1,4 @@
-import { formatBaht, type Bill, type GuardResult, type Item } from '@harngun/shared';
+import { canUnpack, formatBaht, type Bill, type GuardResult, type Item } from '@harngun/shared';
 import { useState, type FormEvent } from 'react';
 import { DecimalInput, parseDecimal } from '../DecimalInput';
 import { go } from '../route';
@@ -6,8 +6,6 @@ import type { BillProps } from './BillScreen';
 
 /** Same line-total rule as the server's updateItem, for the live preview. */
 const lineTotal = (quantity: number, unitPrice: number) => Math.round(quantity * unitPrice);
-const canUnpack = (item: Item) => Number.isInteger(item.quantity) && item.quantity >= 2 && item.quantity <= 50;
-
 export function ReviewStep({ view, send, preview, busy }: BillProps) {
   const { bill, split } = view;
   const { totals } = split;
@@ -26,7 +24,11 @@ export function ReviewStep({ view, send, preview, busy }: BillProps) {
           defaultValue={bill.title}
           placeholder="Restaurant"
           maxLength={100}
-          onBlur={(e) => e.target.value !== bill.title && send('PATCH', '', { title: e.target.value })}
+          onBlur={async (e) => {
+            const box = e.target;
+            const title = (box.value = box.value.trim()); // the server trims too; show what it saves
+            if (title !== bill.title && !(await send('PATCH', '', { title }))) box.value = bill.title;
+          }}
         />
         {bill.items.length === 0 && <p className="muted">No items yet. Add them below.</p>}
 
@@ -38,7 +40,13 @@ export function ReviewStep({ view, send, preview, busy }: BillProps) {
                 defaultValue={item.name}
                 maxLength={100}
                 aria-label="Dish name"
-                onBlur={(e) => e.target.value.trim() && e.target.value !== item.name && send('PATCH', `/items/${item.id}`, { name: e.target.value })}
+                onBlur={async (e) => {
+                  const box = e.target;
+                  const name = (box.value = box.value.trim()); // the server trims too; show what it saves
+                  if (name === item.name) return;
+                  // A refused edit shows the saved name again, not what was typed.
+                  if (!name || !(await send('PATCH', `/items/${item.id}`, { name }))) box.value = item.name;
+                }}
               />
               <div className="item-numbers">
                 <input
@@ -48,9 +56,11 @@ export function ReviewStep({ view, send, preview, busy }: BillProps) {
                   max={1000}
                   defaultValue={item.quantity}
                   aria-label="Quantity"
-                  onBlur={(e) => {
-                    const quantity = Number(e.target.value);
-                    if (quantity > 0 && quantity !== item.quantity) send('PATCH', `/items/${item.id}`, { quantity });
+                  onBlur={async (e) => {
+                    const box = e.target;
+                    const quantity = Number(box.value);
+                    if (quantity === item.quantity) return;
+                    if (!(quantity > 0) || !(await send('PATCH', `/items/${item.id}`, { quantity }))) box.value = String(item.quantity);
                   }}
                 />
                 <span>×</span>

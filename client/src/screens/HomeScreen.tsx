@@ -12,13 +12,11 @@ export function HomeScreen({ session, onSignOut }: { session: Session; onSignOut
     event.target.value = ''; // so picking the same photo again still fires change
     if (!file) return;
     setError('');
-    let billId: string | null = null;
     try {
       setStatus('Shrinking photo…');
       const photo = await compressPhoto(file);
       setStatus('Uploading…');
       const { bill, upload } = await api<BillView & { upload: UploadTarget }>('POST', '/receipts/upload-url', {});
-      billId = bill.id;
       await uploadPhoto(upload, photo);
       setStatus('Reading receipt…');
       await api('POST', `/receipts/${bill.id}/parse`);
