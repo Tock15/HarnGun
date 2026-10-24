@@ -171,6 +171,7 @@ describe('items', () => {
 
     expect(after.items.some((i) => i.id === item!.id)).toBe(false);
     expect(after.claims).toEqual([]);
+    expect((await deleteItem(deps, host, bill.id, item!.id)).bill.items).toEqual(after.items); // double tap
   });
 
   it('unpacks a line into unclaimed single units, clearing its claims', async () => {
@@ -228,6 +229,7 @@ describe('participants and claims', () => {
     const after = (await deleteParticipant(deps, host, bill.id, ann.id)).bill;
     expect(after.participants).toHaveLength(1);
     expect(after.claims).toEqual([]);
+    expect((await deleteParticipant(deps, host, bill.id, ann.id)).bill.participants).toHaveLength(1); // double tap
     await expectError(deleteParticipant(deps, host, bill.id, bill.participants[0]!.id), 'CONFLICT');
   });
 

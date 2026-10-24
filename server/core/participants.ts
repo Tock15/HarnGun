@@ -32,9 +32,10 @@ export async function updateParticipant(deps: Deps, host: BillHost, billId: stri
   }));
 }
 
+/** Removing someone who is already gone is harmless, so a double tap never errors. */
 export async function deleteParticipant(deps: Deps, host: BillHost, billId: string, participantId: string) {
   return writeBill(deps, host, billId, (bill) => {
-    if (findParticipant(bill, participantId).isHost) throw new AppError('CONFLICT', 'The host cannot be removed');
+    if (bill.participants.find((p) => p.id === participantId)?.isHost) throw new AppError('CONFLICT', 'The host cannot be removed');
     return {
       deleteParticipantIds: [participantId],
       deleteClaims: bill.claims.filter((c) => c.participantId === participantId),

@@ -50,11 +50,12 @@ export async function updateItem(deps: Deps, host: BillHost, billId: string, ite
   });
 }
 
+/** Deleting an item that is already gone is harmless, so a double tap never errors. */
 export async function deleteItem(deps: Deps, host: BillHost, billId: string, itemId: string) {
-  return writeBill(deps, host, billId, (bill) => {
-    findItem(bill, itemId);
-    return { deleteItemIds: [itemId], deleteClaims: bill.claims.filter((c) => c.itemId === itemId) };
-  });
+  return writeBill(deps, host, billId, (bill) => ({
+    deleteItemIds: [itemId],
+    deleteClaims: bill.claims.filter((c) => c.itemId === itemId),
+  }));
 }
 
 /** 4 × Singha → four unclaimed single bottles; any claims on the line are cleared (decided 2026-10-24). */
