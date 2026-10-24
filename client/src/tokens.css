@@ -1,0 +1,59 @@
+/* Tokens from docs/06-UI_DESIGN_SYSTEM.md §2. */
+:root {
+  --canvas-bg: #141416;
+  --canvas-subtle: #1E1E22;
+  --canvas-text: #E4E4E7;
+  --canvas-muted: #71717A;
+
+  --paper-bg: #FAF8F5;
+  --paper-ink: #1C1917;
+  --paper-ink-secondary: #57534E;
+  --paper-ink-muted: #A8A29E;
+  --paper-line: #E7E5E4;
+  --paper-tear: #D6D3D1;
+
+  --highlighter-0: #BBF7D0;  --highlighter-0-ink: #14532D;
+  --highlighter-1: #BAE6FD;  --highlighter-1-ink: #0C4A6E;
+  --highlighter-2: #DDD6FE;  --highlighter-2-ink: #4C1D95;
+  --highlighter-3: #FED7AA;  --highlighter-3-ink: #7C2D12;
+  --highlighter-4: #FBCFE8;  --highlighter-4-ink: #831843;
+  --highlighter-5: #D9F99D;  --highlighter-5-ink: #365314;
+  --highlighter-6: #99F6E4;  --highlighter-6-ink: #134E4A;
+  --highlighter-7: #FECACA;  --highlighter-7-ink: #7F1D1D;
+  --highlighter-shared: #FEF08A;
+  --highlighter-shared-ink: #713F12;
+
+  --brand-promptpay: #007A64;
+  --brand-promptpay-hover: #005F4E;
+
+  --font-receipt: 'IBM Plex Mono', 'IBM Plex Sans Thai', monospace;
+  --font-thai: 'IBM Plex Sans Thai', sans-serif;
+  --font-sans: 'Inter', 'IBM Plex Sans Thai', sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--canvas-bg); color: var(--canvas-text); font: 15px/1.5 var(--font-sans); }
+.canvas { min-height: 100dvh; padding: 24px 16px; }
+
+.slip { max-width: 420px; margin: 0 auto; color: var(--paper-ink); font-family: var(--font-receipt); }
+.slip-body { background: var(--paper-bg); padding: 16px 20px 24px; }
+.sawtooth-top {
+  height: 12px;
+  background: linear-gradient(45deg, var(--paper-bg) 8px, transparent 0),
+              linear-gradient(-45deg, var(--paper-bg) 8px, transparent 0);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 16px 12px;
+}
+.tear-dashed-line { border-top: 2px dashed var(--paper-tear); }
+.receipt-stamp {
+  display: inline-block;
+  transform: rotate(-2deg);
+  border: 1.5px solid var(--brand-promptpay);
+  color: var(--brand-promptpay);
+  font-family: var(--font-receipt);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
