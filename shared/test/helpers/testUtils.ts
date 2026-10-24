@@ -33,7 +33,7 @@ export function makeItem(totalPrice: number | null, overrides: Partial<Item> = {
 }
 
 export function makeParticipants(...names: string[]): Participant[] {
-  return names.map((name, i) => ({ id: name, name, colorIndex: i % 8, isHost: i === 0, isPaid: false }));
+  return names.map((name, i) => ({ id: name, name, colorIndex: i % 8, isHost: i === 0, isPaid: false, sortOrder: i }));
 }
 
 export function claim(item: Item, ...participantIds: string[]): Claim[] {

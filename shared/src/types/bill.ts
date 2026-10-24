@@ -43,6 +43,8 @@ export interface Participant {
   colorIndex: number;
   isHost: boolean;
   isPaid: boolean;
+  /** Join order. Leftover satang go to the earliest participant, so storage must preserve it. */
+  sortOrder: number;
 }
 
 /** A participant claiming an item. Several claims on one item split it evenly. */
