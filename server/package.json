@@ -1,0 +1,25 @@
+{
+  "name": "@harngun/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch express/server.ts",
+    "start": "tsx express/server.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "tsx": "^4.23.15"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1156.0",
+    "@aws-sdk/client-dynamodb": "^3.1156.0",
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@aws-sdk/lib-dynamodb": "^3.1156.0",
+    "@aws-sdk/s3-presigned-post": "^3.1156.0",
+    "@harngun/shared": "*",
+    "express": "^5.3.0",
+    "zod": "^4.6.7"
+  }
+}

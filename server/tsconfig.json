@@ -1,0 +1,4 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": ["core", "ports", "adapters", "db", "express", "lambda", "test", "*.ts"]
+}
