@@ -2,6 +2,13 @@ import type { Item } from '../types';
 import { splitEvenly } from './allocate';
 import { divideRoundHalfUp } from './money';
 
+/** All units are written in one transaction, which DynamoDB caps at 100 records. */
+export const MAX_UNPACK = 50;
+
+/** Which lines the server will unpack; the client uses it to show the "Split into singles" button. */
+export const canUnpack = (item: Pick<Item, 'quantity'>) =>
+  Number.isInteger(item.quantity) && item.quantity >= 2 && item.quantity <= MAX_UNPACK;
+
 /**
  * Splits an item with quantity > 1 into single-quantity items so each unit can be claimed
  * separately (PRD §4.4): 4 × Singha ฿400 → four ฿100 items. Uneven prices are split with the

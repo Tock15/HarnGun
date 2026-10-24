@@ -1,4 +1,4 @@
-import type { BillHost } from '@harngun/shared';
+import { MAX_UNPACK, type BillHost } from '@harngun/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   addItem,
@@ -11,7 +11,6 @@ import {
   deleteItem,
   deleteParticipant,
   getBill,
-  MAX_UNPACK,
   parseReceipt,
   unclaim,
   unpack,

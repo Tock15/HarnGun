@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { unpackItem, type Bill, type BillHost, type Item } from '@harngun/shared';
+import { canUnpack, MAX_UNPACK, unpackItem, type Bill, type BillHost, type Item } from '@harngun/shared';
 import { parseInput, writeBill, type Deps } from './context';
 import { AppError } from './errors';
 import { addItemInput, updateItemInput } from './schemas';
@@ -9,9 +9,6 @@ function findItem(bill: Bill, itemId: string): Item {
   if (!item) throw new AppError('NOT_FOUND', 'Item not found');
   return item;
 }
-
-/** All units are written in one transaction, which DynamoDB caps at 100 records. */
-export const MAX_UNPACK = 50;
 
 const lineTotal =(quantity: number, unitPrice: number) => Math.round(quantity * unitPrice);
 
@@ -64,7 +61,7 @@ export async function deleteItem(deps: Deps, host: BillHost, billId: string, ite
 export async function unpack(deps: Deps, host: BillHost, billId: string, itemId: string) {
   return writeBill(deps, host, billId, (bill) => {
     const item = findItem(bill, itemId);
-    if (!Number.isInteger(item.quantity) || item.quantity < 2 || item.quantity > MAX_UNPACK) {
+    if (!canUnpack(item)) {
       throw new AppError('CONFLICT', `Only lines with a whole quantity from 2 to ${MAX_UNPACK} can be unpacked`);
     }
     if (item.totalPrice === null) throw new AppError('CONFLICT', 'Fill in the price before unpacking');
