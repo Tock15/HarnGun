@@ -1,0 +1,24 @@
+# Installed on the host (Windows binaries); the image runs its own npm ci
+**/node_modules
+
+# Build output, rebuilt inside the image when needed
+**/dist
+**/coverage
+**/*.tsbuildinfo
+
+# Local config and secrets: config comes in through -e / compose
+**/*.env
+**/.env.*
+
+# Tests run on the host, not in the runtime image
+server/test
+shared/test
+
+# Not part of any image
+.git
+docs
+artifact
+.playwright-mcp
+.aws-sam
+.vscode
+.idea

@@ -1,5 +1,8 @@
 # Development only: the two data containers with ports published, for `npm run dev -w server`
-# and `npm run test:integration`. The full four-service stack is docker-compose.yml (Day 4).
+# and `npm run test:integration`. The full four-service stack is docker-compose.yml.
+# Own project name, so it never replaces the full stack's database/storage containers.
+name: harngun-dev
+
 services:
   database:
     image: amazon/dynamodb-local:3.3.1
