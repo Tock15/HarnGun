@@ -37,16 +37,15 @@ describe('express app', () => {
     expect(await api('GET', '/api/health')).toEqual({ status: 200, json: { ok: true } });
   });
 
-  it('creates a bill with 201 and polls it with 304 until it changes', async () => {
+  it('creates a bill with 201 and reads back each change', async () => {
     const api = start();
     const token = await signIn(api);
     const created = await api('POST', '/api/bills', { token });
-    const { id, version } = created.json.bill;
+    const { id } = created.json.bill;
 
     expect(created.status).toBe(201);
-    expect((await api('GET', `/api/bills/${id}?since=${version}`, { token })).status).toBe(304);
     await api('PATCH', `/api/bills/${id}`, { token, body: { title: 'Dinner' } });
-    const changed = await api('GET', `/api/bills/${id}?since=${version}`, { token });
+    const changed = await api('GET', `/api/bills/${id}`, { token });
     expect(changed.status).toBe(200);
     expect(changed.json.bill.title).toBe('Dinner');
     expect(changed.json.split.guard.status).toBe('INCOMPLETE');

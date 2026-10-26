@@ -1,6 +1,5 @@
 import type { Item } from '../types';
 import { splitEvenly } from './allocate';
-import { divideRoundHalfUp } from './money';
 
 /** All units are written in one transaction, which DynamoDB caps at 100 records. */
 export const MAX_UNPACK = 50;
@@ -43,33 +42,3 @@ export function unpackItem(item: Item, unitIds: readonly string[]): Item[] {
   });
 }
 
-/**
- * Reverses unpackItem. The caller must check that none of the units are claimed first.
- */
-export function repackItems(units: readonly Item[]): Item {
-  const [first] = units;
-  if (first === undefined || units.length < 2) throw new RangeError('Need at least 2 units to repack');
-  const parentId = first.parentItemId;
-  if (parentId === undefined || units.some((u) => u.parentItemId !== parentId)) {
-    throw new Error('All units must come from the same unpacked item');
-  }
-
-  let totalPrice = 0;
-  let itemDiscount = 0;
-  for (const unit of units) {
-    if (unit.totalPrice === null) throw new Error('Cannot repack a unit without a price');
-    totalPrice += unit.totalPrice;
-    itemDiscount += unit.itemDiscount;
-  }
-
-  const { parentItemId: _parent, ...rest } = first;
-  return {
-    ...rest,
-    id: parentId,
-    quantity: units.length,
-    unitPrice: Number(divideRoundHalfUp(BigInt(totalPrice), BigInt(units.length))),
-    totalPrice,
-    itemDiscount,
-    sortOrder: Math.min(...units.map((u) => u.sortOrder)),
-  };
-}

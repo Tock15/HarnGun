@@ -103,7 +103,7 @@ describe('parsing a receipt', () => {
     const saved = results.find((r) => r.status === 'fulfilled')!.value.bill;
 
     expect(results.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
-    expect((await getBill(deps, host, bill.id))!.bill.items).toHaveLength(saved.items.length);
+    expect((await getBill(deps, host, bill.id)).bill.items).toHaveLength(saved.items.length);
   });
 
   it('reports a parser failure as PARSER_FAILED', async () => {
@@ -127,14 +127,6 @@ describe('access', () => {
     await expectError(getBill(deps, host, 'missing'), 'NOT_FOUND');
     await expectError(getBill(deps, stranger, bill.id), 'FORBIDDEN');
     await expectError(updateBill(deps, stranger, bill.id, { title: 'mine now' }), 'FORBIDDEN');
-  });
-
-  it('answers polling with null while the version is unchanged', async () => {
-    const { bill } = await createBill(deps, host, {});
-
-    expect(await getBill(deps, host, bill.id, bill.version)).toBeNull();
-    await updateBill(deps, host, bill.id, { title: 'changed' });
-    expect((await getBill(deps, host, bill.id, bill.version))?.bill.title).toBe('changed');
   });
 
   it('rejects invalid bodies with the failing field', async () => {
@@ -197,7 +189,7 @@ describe('items', () => {
 
     expect(deleted.status).toBe('fulfilled');
     expect(edited).toMatchObject({ status: 'rejected', reason: { code: 'NOT_FOUND' } });
-    expect((await getBill(deps, host, bill.id))!.bill.items.some((i) => i.id === item.id)).toBe(false);
+    expect((await getBill(deps, host, bill.id)).bill.items.some((i) => i.id === item.id)).toBe(false);
   });
 
   it('unpacks a line into unclaimed single units, clearing its claims', async () => {

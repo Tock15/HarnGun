@@ -37,8 +37,6 @@ export interface BillRepository {
   create(bill: Bill, expiresAt: Date | null): Promise<void>;
   /** The whole bill, or null if missing or an expired DRAFT. */
   get(billId: string): Promise<Bill | null>;
-  /** Cheap METADATA-only read for polling. Null if the bill does not exist. */
-  getVersion(billId: string): Promise<number | null>;
   /**
    * Applies the changes atomically, only if the bill is still at `expectedVersion`. False if it
    * does not exist (or is an expired DRAFT) or another write changed it since.

@@ -33,7 +33,6 @@ describe('DynamoBillRepository', () => {
     const loaded = await repo.get(bill.id);
 
     expect({ ...loaded, claims: sortClaims(loaded) }).toEqual({ ...bill, claims: sortClaims(bill) });
-    expect(await repo.getVersion(bill.id)).toBe(bill.version);
   });
 
   it('applies meta, item and participant changes in one write and bumps version by 1', async () => {
@@ -122,14 +121,13 @@ describe('DynamoBillRepository', () => {
 
     expect(await conflictingRepo.update(bill.id, { putClaims: [{ itemId: bill.items[0]!.id, participantId: 'p-x' }] }, bill.version)).toBe(true);
     expect(conflicts).toBe(-1);
-    expect(await repo.getVersion(bill.id)).toBe(bill.version + 1);
+    expect((await repo.get(bill.id))?.version).toBe(bill.version + 1);
   });
 
   it('reports a missing bill without creating anything', async () => {
     const id = randomUUID();
 
     expect(await repo.get(id)).toBeNull();
-    expect(await repo.getVersion(id)).toBeNull();
     expect(await repo.update(id, { meta: { title: 'x' } }, 1)).toBe(false);
     expect(await rawMetadata(id)).toBeUndefined();
   });
@@ -139,7 +137,6 @@ describe('DynamoBillRepository', () => {
 
     expect(await rawMetadata(bill.id)).toBeDefined();
     expect(await repo.get(bill.id)).toBeNull();
-    expect(await repo.getVersion(bill.id)).toBeNull();
     expect(await repo.update(bill.id, { clearExpiry: true }, bill.version)).toBe(false);
   });
 

@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Bill, BillHost } from '@harngun/shared';
 import { billView, loadOwnedBill, parseInput, writeBill, type BillView, type Deps } from './context';
-import { AppError } from './errors';
 import { createBillInput, updateBillInput } from './schemas';
 
 /** A new bill disappears after this unless it gets its first item (decision 1). */
@@ -35,14 +34,7 @@ export async function createBill(deps: Deps, host: BillHost, body: unknown, rece
   return billView(bill);
 }
 
-/** Polling read: `null` means "unchanged since `since`" (HTTP 304). */
-export async function getBill(deps: Deps, host: BillHost, billId: string, since?: number): Promise<BillView | null> {
-  if (since !== undefined) {
-    const version = await deps.bills.getVersion(billId);
-    if (version === null) throw new AppError('NOT_FOUND', 'Bill not found');
-    // shortcut: the unchanged answer skips the owner check, so it only reveals "no change" to someone who already knows this UUID; Mode B guest tokens replace this.
-    if (version === since) return null;
-  }
+export async function getBill(deps: Deps, host: BillHost, billId: string): Promise<BillView> {
   return billView(await loadOwnedBill(deps, host, billId));
 }
 

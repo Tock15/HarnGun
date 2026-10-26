@@ -1,7 +1,6 @@
 import { TransactionCanceledException, type DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
-  GetCommand,
   QueryCommand,
   TransactWriteCommand,
   type TransactWriteCommandInput,
@@ -76,20 +75,6 @@ export class DynamoBillRepository implements BillRepository {
     const meta = records.find((r) => r.SK === METADATA_SK);
     if (!meta || this.isExpired(meta)) return null;
     return fromRecords(records as { SK: string }[]);
-  }
-
-  async getVersion(billId: string): Promise<number | null> {
-    const { Item } = await this.doc.send(
-      new GetCommand({
-        TableName: this.tableName,
-        Key: { PK: billPk(billId), SK: METADATA_SK },
-        ProjectionExpression: '#version, #expiresAt',
-        ExpressionAttributeNames: { '#version': 'version', '#expiresAt': TTL_ATTRIBUTE },
-        ConsistentRead: true,
-      }),
-    );
-    if (!Item || this.isExpired(Item)) return null;
-    return Item.version as number;
   }
 
   async update(billId: string, changes: BillChanges, expectedVersion: number): Promise<boolean> {

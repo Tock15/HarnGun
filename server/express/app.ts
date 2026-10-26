@@ -40,12 +40,7 @@ export function createApp(deps: Deps) {
   app.post('/api/receipts/upload-url', send(201, (req, res) => core.createUploadUrl(deps, host(res), req.body)));
   app.post('/api/receipts/:id/parse', send(200, (req, res) => core.parseReceipt(deps, host(res), param(req, 'id'))));
 
-  app.get('/api/bills/:id', async (req, res) => {
-    const since = typeof req.query.since === 'string' && /^\d+$/.test(req.query.since) ? Number(req.query.since) : undefined;
-    const view = await core.getBill(deps, host(res), param(req, 'id'), since);
-    if (view) res.json(view);
-    else res.status(304).end();
-  });
+  app.get('/api/bills/:id', send(200, (req, res) => core.getBill(deps, host(res), param(req, 'id'))));
   app.patch('/api/bills/:id', send(200, (req, res) => core.updateBill(deps, host(res), param(req, 'id'), req.body)));
 
   app.post('/api/bills/:id/items', send(201, (req, res) => core.addItem(deps, host(res), param(req, 'id'), req.body)));

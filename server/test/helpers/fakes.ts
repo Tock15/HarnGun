@@ -17,10 +17,6 @@ export class FakeBillRepository implements BillRepository {
     return entry ? structuredClone(entry.bill) : null;
   }
 
-  async getVersion(billId: string) {
-    return this.live(billId)?.bill.version ?? null;
-  }
-
   async update(billId: string, changes: BillChanges, expectedVersion: number) {
     const entry = this.live(billId);
     if (!entry || entry.bill.version !== expectedVersion) return false;
