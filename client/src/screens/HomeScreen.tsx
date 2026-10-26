@@ -47,6 +47,11 @@ export function HomeScreen({ session, onSignOut }: { session: Session; onSignOut
         {busy ? status : 'Scan receipt'}
         <input type="file" accept="image/*" capture="environment" onChange={scan} disabled={busy} hidden />
       </label>
+      {/* No capture attribute: phones offer the photo library. */}
+      <label className={`button${busy ? ' disabled' : ''}`}>
+        Upload a photo
+        <input type="file" accept="image/*" onChange={scan} disabled={busy} hidden />
+      </label>
       <button onClick={startEmpty} disabled={busy}>Type items in by hand</button>
       {error && <p className="error" role="alert">{error}</p>}
       <button className="link" onClick={onSignOut}>Not {session.host.name}? Sign out</button>
