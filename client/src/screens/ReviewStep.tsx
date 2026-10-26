@@ -4,7 +4,6 @@ import { DecimalInput, parseDecimal } from '../DecimalInput';
 import { go } from '../route';
 import type { BillProps } from './BillScreen';
 
-/** Same line-total rule as the server's updateItem, for the live preview. */
 export function ReviewStep({ view, send, preview, busy }: BillProps) {
   const { bill, split } = view;
   const { totals } = split;
