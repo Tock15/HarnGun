@@ -192,6 +192,15 @@ describe('items', () => {
     expect((await getBill(deps, host, bill.id)).bill.items.some((i) => i.id === item.id)).toBe(false);
   });
 
+  it('gives up with CONFLICT after 5 saves in a row lose to other writes', async () => {
+    const { bill } = await createBill(deps, host, {});
+    let attempts = 0;
+    bills.update = async () => (attempts++, false); // every save loses the version check
+
+    await expectError(updateBill(deps, host, bill.id, { title: 'x' }), 'CONFLICT');
+    expect(attempts).toBe(5);
+  });
+
   it('unpacks a line into unclaimed single units, clearing its claims', async () => {
     const bill = await scannedBill();
     const line = bill.items.find((i) => i.quantity >= 2)!;
