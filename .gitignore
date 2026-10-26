@@ -15,6 +15,9 @@ coverage/
 artifact/
 .playwright-mcp/
 
+# Claude Code settings (local only; the .env read block still applies)
+.claude/
+
 # Project docs (kept local)
 docs/
 
