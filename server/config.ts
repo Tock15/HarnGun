@@ -4,6 +4,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { DevAuth } from './adapters/auth/devAuth';
 import { DynamoBillRepository } from './adapters/dynamo/dynamoBillRepository';
 import { BedrockParser } from './adapters/parser/bedrockParser';
+import { GeminiParser } from './adapters/parser/geminiParser';
 import { MockParser } from './adapters/parser/mockParser';
 import { S3ImageStorage } from './adapters/s3/s3ImageStorage';
 
@@ -25,6 +26,9 @@ export interface Config {
   mockAi: boolean;
   /** Fixture MockParser returns; unset = its default. */
   mockFixture?: string;
+  /** Dev only: set (with MOCK_AI=false) = Gemini instead of Bedrock. */
+  geminiApiKey?: string;
+  geminiModel: string;
   bedrockRegion: string;
   bedrockModelId: string;
 }
@@ -38,6 +42,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   };
 
   const mockAi = env.MOCK_AI !== 'false';
+  const geminiApiKey = env.GEMINI_API_KEY || undefined;
+  const useGemini = !mockAi && geminiApiKey !== undefined;
+  const useBedrock = !mockAi && !useGemini;
   const config: Config = {
     databaseEndpoint: env.DATABASE_ENDPOINT || undefined,
     tableName: required('TABLE_NAME'),
@@ -53,8 +60,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     devAuthSecret: required('DEV_AUTH_SECRET'),
     mockAi,
     mockFixture: env.MOCK_FIXTURE || undefined,
-    bedrockRegion: mockAi ? env.BEDROCK_REGION ?? '' : required('BEDROCK_REGION'),
-    bedrockModelId: mockAi ? env.BEDROCK_MODEL_ID ?? '' : required('BEDROCK_MODEL_ID'),
+    geminiApiKey,
+    geminiModel: useGemini ? required('GEMINI_MODEL') : env.GEMINI_MODEL ?? '',
+    bedrockRegion: useBedrock ? required('BEDROCK_REGION') : env.BEDROCK_REGION ?? '',
+    bedrockModelId: useBedrock ? required('BEDROCK_MODEL_ID') : env.BEDROCK_MODEL_ID ?? '',
   };
 
   if (missing.length > 0) throw new Error(`Missing environment variables: ${missing.join(', ')}`);
@@ -81,7 +90,9 @@ export function createAdapters(config: Config) {
     images: new S3ImageStorage(s3, createS3Client(config, config.s3PublicEndpoint), config.bucket),
     parser: config.mockAi
       ? new MockParser(config.mockFixture)
-      : // Bedrock uses the standard AWS credential chain (e.g. `aws login`), never the local keys.
+      : config.geminiApiKey
+        ? new GeminiParser(config.geminiApiKey, config.geminiModel)
+        : // Bedrock uses the standard AWS credential chain (e.g. `aws login`), never the local keys.
         new BedrockParser(new BedrockRuntimeClient({ region: config.bedrockRegion }), config.bedrockModelId),
     auth: new DevAuth(config.devAuthSecret),
   };

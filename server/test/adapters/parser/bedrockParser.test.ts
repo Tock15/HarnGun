@@ -1,8 +1,8 @@
 import type { ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import { receiptFixtures } from '@harngun/shared/fixtures';
 import { describe, expect, it } from 'vitest';
-import { BedrockParser, ReceiptParseError } from '../../../adapters/parser/bedrockParser';
-import { receiptSchema } from '../../../adapters/parser/receiptSchema';
+import { BedrockParser } from '../../../adapters/parser/bedrockParser';
+import { ReceiptParseError, receiptSchema } from '../../../adapters/parser/receiptSchema';
 
 const receipt = receiptFixtures['restaurant-sc-vat-discount']!;
 const image = new Uint8Array([0xff, 0xd8, 0xff]);

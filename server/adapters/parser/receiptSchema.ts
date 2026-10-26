@@ -47,5 +47,17 @@ export const receiptSchema = z.object({
 }) satisfies z.ZodType<ParsedReceipt>;
 
 const { $schema: _dialect, ...jsonSchema } = z.toJSONSchema(receiptSchema);
-/** JSON Schema for Bedrock's tool definition. */
+/** JSON Schema for Bedrock's tool definition and Gemini's response schema. */
 export const receiptJsonSchema = jsonSchema;
+
+/** Thrown by every real parser when the model's reply can't be used. */
+export class ReceiptParseError extends Error {
+  override name = 'ReceiptParseError';
+}
+
+// Guardrails from 04-THAI_RECEIPT_PATTERNS.md §4, shared by every real parser.
+export const RECEIPT_RULES = `- Report only what is printed. Never calculate or guess amounts.
+- If a price is smudged or cut off, use null and set needsReview to true.
+- Report each line with its printed quantity; do not split lines.
+- Set isVatInclusive to true when the receipt says VAT is included (e.g. "รวม VAT 7% แล้ว", "VAT Included").
+- Use null for any financial line that is not printed.`;

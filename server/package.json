@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=dev.env express/server.ts",
+    "dev": "tsx watch --env-file=dev.env --env-file-if-exists=.env express/server.ts",
     "start": "tsx express/server.ts",
     "build": "esbuild express/server.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/server.mjs \"--banner:js=import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\"",
     "typecheck": "tsc -p tsconfig.json"

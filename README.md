@@ -64,7 +64,7 @@ All settings are environment variables on `backend` in `docker-compose.yml`. The
 
 ## Development without Docker for the app
 
-Runs only the database and storage in Docker, and the app with hot reload. Requires Node.js 22+.
+Runs only the database and storage in Docker, and the app with hot reload. Requires Node.js 22.9+.
 
 ```bash
 npm install
@@ -75,6 +75,18 @@ npm test                                         # unit tests
 npm run test:integration                         # needs the dev containers
 npm run typecheck
 ```
+
+### Real receipt scans (optional)
+
+By default the API returns a sample receipt. To read real photos with Google's Gemini API, create `server/.env` (git-ignored; it overrides `server/dev.env`):
+
+```bash
+MOCK_AI=false
+GEMINI_API_KEY=<your key from aistudio.google.com>
+GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+Restart `npm run dev -w server`; the startup line names the parser. Development only: the Docker stack always uses the sample receipt.
 
 ## Repository layout
 

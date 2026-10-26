@@ -1,21 +1,12 @@
 import { ConverseCommand, type BedrockRuntimeClient, type ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { ParsedReceipt } from '@harngun/shared';
 import type { ReceiptParser } from '../../ports';
-import { receiptJsonSchema, receiptSchema } from './receiptSchema';
+import { RECEIPT_RULES, ReceiptParseError, receiptJsonSchema, receiptSchema } from './receiptSchema';
 
 const TOOL_NAME = 'record_receipt';
 
-// Guardrails from 04-THAI_RECEIPT_PATTERNS.md §4.
 const PROMPT = `Read this Thai restaurant receipt and record it with the ${TOOL_NAME} tool.
-- Report only what is printed. Never calculate or guess amounts.
-- If a price is smudged or cut off, use null and set needsReview to true.
-- Report each line with its printed quantity; do not split lines.
-- Set isVatInclusive to true when the receipt says VAT is included (e.g. "รวม VAT 7% แล้ว", "VAT Included").
-- Use null for any financial line that is not printed.`;
-
-export class ReceiptParseError extends Error {
-  override name = 'ReceiptParseError';
-}
+${RECEIPT_RULES}`;
 
 /** Only `send` is used, so tests can pass a fake client. */
 type ConverseClient = Pick<BedrockRuntimeClient, 'send'>;

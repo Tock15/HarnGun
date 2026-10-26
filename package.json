@@ -8,7 +8,7 @@
     "client"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22.9"
   },
   "scripts": {
     "test": "vitest run --project unit",
