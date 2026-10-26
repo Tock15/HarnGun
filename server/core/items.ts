@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { canUnpack, MAX_UNPACK, unpackItem, type Bill, type BillHost, type Item } from '@harngun/shared';
+import { canUnpack, lineTotal, MAX_UNPACK, unpackItem, type Bill, type BillHost, type Item } from '@harngun/shared';
 import { parseInput, writeBill, type Deps } from './context';
 import { AppError } from './errors';
 import { addItemInput, updateItemInput } from './schemas';
@@ -9,8 +9,6 @@ function findItem(bill: Bill, itemId: string): Item {
   if (!item) throw new AppError('NOT_FOUND', 'Item not found');
   return item;
 }
-
-const lineTotal =(quantity: number, unitPrice: number) => Math.round(quantity * unitPrice);
 
 export async function addItem(deps: Deps, host: BillHost, billId: string, body: unknown) {
   const input = parseInput(addItemInput, body);

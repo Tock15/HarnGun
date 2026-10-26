@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { MAX_UPLOAD_BYTES, S3ImageStorage } from '../../../adapters/s3/s3ImageStorage';
+import { MAX_UPLOAD_BYTES } from '@harngun/shared';
+import { S3ImageStorage } from '../../../adapters/s3/s3ImageStorage';
 import { createS3Client } from '../../../config';
 import { integrationSetup } from '../../helpers/integration';
 

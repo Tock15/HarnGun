@@ -14,6 +14,9 @@ export function bahtToSatang(baht: number): Satang {
   return Math.sign(baht) * Math.round(Math.abs(baht) * 100) + 0;
 }
 
+/** Line total in satang: quantity × unit price, rounded (quantities can be fractional, e.g. 0.5 kg). */
+export const lineTotal = (quantity: number, unitPrice: Satang): Satang => Math.round(quantity * unitPrice);
+
 /** Converts a percentage to basis points: 7 → 700, 2.5 → 250. */
 export function percentToBasisPoints(percent: number): BasisPoints {
   if (!Number.isFinite(percent)) throw new RangeError(`Invalid percentage: ${percent}`);

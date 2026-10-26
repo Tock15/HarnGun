@@ -1,8 +1,8 @@
 import { GetObjectCommand, NoSuchKey, type S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { MAX_UPLOAD_BYTES } from '@harngun/shared';
 import type { ImageStorage, UploadTarget } from '../../ports';
 
-export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const UPLOAD_EXPIRY_SECONDS = 300;
 
 export class S3ImageStorage implements ImageStorage {
