@@ -21,9 +21,9 @@ export class FakeBillRepository implements BillRepository {
     return this.live(billId)?.bill.version ?? null;
   }
 
-  async update(billId: string, changes: BillChanges) {
+  async update(billId: string, changes: BillChanges, expectedVersion: number) {
     const entry = this.live(billId);
-    if (!entry) return false;
+    if (!entry || entry.bill.version !== expectedVersion) return false;
     const { bill } = entry;
     const sameClaim = (a: { itemId: string; participantId: string }) => (b: typeof a) =>
       a.itemId === b.itemId && a.participantId === b.participantId;

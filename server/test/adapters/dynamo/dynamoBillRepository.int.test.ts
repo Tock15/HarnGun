@@ -43,7 +43,7 @@ describe('DynamoBillRepository', () => {
       meta: { title: 'Renamed', discounts: [], calcConfig: { ...bill.calcConfig, serviceChargeRate: 0 } },
       putItems: [{ ...first!, name: 'ต้มยำกุ้งน้ำใส', unitPrice: 30000 }],
       putParticipants: [{ id: 'c-bo', name: 'Bo', colorIndex: 2, isHost: false, isPaid: false, sortOrder: 2 }],
-    });
+    }, bill.version);
     const loaded = await repo.get(bill.id);
 
     expect(found).toBe(true);
@@ -61,7 +61,7 @@ describe('DynamoBillRepository', () => {
     const itemId = bill.items[0]!.id;
     const itemClaims = bill.claims.filter((c) => c.itemId === itemId);
 
-    await repo.update(bill.id, { deleteItemIds: [itemId], deleteClaims: itemClaims });
+    await repo.update(bill.id, { deleteItemIds: [itemId], deleteClaims: itemClaims }, bill.version);
     const loaded = await repo.get(bill.id);
 
     expect(loaded?.items.some((i) => i.id === itemId)).toBe(false);
@@ -72,22 +72,31 @@ describe('DynamoBillRepository', () => {
     const bill = await createSample();
     const existing = bill.claims[0]!;
 
-    expect(await repo.update(bill.id, { putClaims: [existing] })).toBe(true);
-    expect(await repo.update(bill.id, { deleteClaims: [{ itemId: 'nope', participantId: 'nobody' }] })).toBe(true);
+    expect(await repo.update(bill.id, { putClaims: [existing] }, bill.version)).toBe(true);
+    expect(await repo.update(bill.id, { deleteClaims: [{ itemId: 'nope', participantId: 'nobody' }] }, bill.version + 1)).toBe(true);
     expect((await repo.get(bill.id))?.claims).toHaveLength(bill.claims.length);
   });
 
-  it('saves every claim when many arrive at the same moment', async () => {
+  it('lets only one of many writes based on the same version land', async () => {
     const bill = await createSample();
     const itemId = bill.items[0]!.id;
     const claims = Array.from({ length: 10 }, (_, i) => ({ itemId, participantId: `p-${i}` }));
 
-    const results = await Promise.all(claims.map((claim) => repo.update(bill.id, { putClaims: [claim] })));
+    const results = await Promise.all(claims.map((claim) => repo.update(bill.id, { putClaims: [claim] }, bill.version)));
     const loaded = await repo.get(bill.id);
 
-    expect(results.every(Boolean)).toBe(true);
-    expect(loaded?.claims).toEqual(expect.arrayContaining(claims));
-    expect(loaded?.version).toBe(bill.version + claims.length);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(loaded?.claims).toContainEqual(claims[results.indexOf(true)]);
+    expect(loaded?.claims.filter((c) => c.participantId.startsWith('p-'))).toHaveLength(1);
+    expect(loaded?.version).toBe(bill.version + 1);
+  });
+
+  it('refuses a write based on an old version and changes nothing', async () => {
+    const bill = await createSample();
+    await repo.update(bill.id, { meta: { title: 'First' } }, bill.version);
+
+    expect(await repo.update(bill.id, { meta: { title: 'Stale' } }, bill.version)).toBe(false);
+    expect(await repo.get(bill.id)).toMatchObject({ title: 'First', version: bill.version + 1 });
   });
 
   it('retries a write that DynamoDB cancelled for a conflict', async () => {
@@ -111,7 +120,7 @@ describe('DynamoBillRepository', () => {
     const conflictingRepo = new DynamoBillRepository(client, config.tableName);
     const bill = await createSample();
 
-    expect(await conflictingRepo.update(bill.id, { putClaims: [{ itemId: bill.items[0]!.id, participantId: 'p-x' }] })).toBe(true);
+    expect(await conflictingRepo.update(bill.id, { putClaims: [{ itemId: bill.items[0]!.id, participantId: 'p-x' }] }, bill.version)).toBe(true);
     expect(conflicts).toBe(-1);
     expect(await repo.getVersion(bill.id)).toBe(bill.version + 1);
   });
@@ -121,7 +130,7 @@ describe('DynamoBillRepository', () => {
 
     expect(await repo.get(id)).toBeNull();
     expect(await repo.getVersion(id)).toBeNull();
-    expect(await repo.update(id, { meta: { title: 'x' } })).toBe(false);
+    expect(await repo.update(id, { meta: { title: 'x' } }, 1)).toBe(false);
     expect(await rawMetadata(id)).toBeUndefined();
   });
 
@@ -131,14 +140,14 @@ describe('DynamoBillRepository', () => {
     expect(await rawMetadata(bill.id)).toBeDefined();
     expect(await repo.get(bill.id)).toBeNull();
     expect(await repo.getVersion(bill.id)).toBeNull();
-    expect(await repo.update(bill.id, { clearExpiry: true })).toBe(false);
+    expect(await repo.update(bill.id, { clearExpiry: true }, bill.version)).toBe(false);
   });
 
   it('keeps a draft once its expiry is cleared', async () => {
     const bill = await createSample(hourFromNow());
     expect((await rawMetadata(bill.id))?.expiresAt).toBeDefined();
 
-    await repo.update(bill.id, { clearExpiry: true });
+    await repo.update(bill.id, { clearExpiry: true }, bill.version);
 
     expect((await rawMetadata(bill.id))?.expiresAt).toBeUndefined();
   });

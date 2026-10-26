@@ -95,6 +95,17 @@ describe('parsing a receipt', () => {
     await expectError(parseReceipt(deps, host, manual.id), 'CONFLICT');
   });
 
+  it('saves the items once when two parses run at the same moment', async () => {
+    const { bill } = await createUploadUrl(deps, host, {});
+    images.images.set(bill.receiptImageKey!, new Uint8Array([0xff, 0xd8]));
+
+    const results = await Promise.allSettled([parseReceipt(deps, host, bill.id), parseReceipt(deps, host, bill.id)]);
+    const saved = results.find((r) => r.status === 'fulfilled')!.value.bill;
+
+    expect(results.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
+    expect((await getBill(deps, host, bill.id))!.bill.items).toHaveLength(saved.items.length);
+  });
+
   it('reports a parser failure as PARSER_FAILED', async () => {
     ({ deps, images } = fakeDeps(failingParser));
     const { bill } = await createUploadUrl(deps, host, {});
@@ -172,6 +183,21 @@ describe('items', () => {
     expect(after.items.some((i) => i.id === item!.id)).toBe(false);
     expect(after.claims).toEqual([]);
     expect((await deleteItem(deps, host, bill.id, item!.id)).bill.items).toEqual(after.items); // double tap
+  });
+
+  it('never brings back an item deleted while an edit to it was in flight', async () => {
+    const bill = await scannedBill();
+    const item = bill.items[0]!;
+
+    // Both load the same version; the delete saves first, so the edit must not write the item back.
+    const [deleted, edited] = await Promise.allSettled([
+      deleteItem(deps, host, bill.id, item.id),
+      updateItem(deps, host, bill.id, item.id, { unitPrice: 15000 }),
+    ]);
+
+    expect(deleted.status).toBe('fulfilled');
+    expect(edited).toMatchObject({ status: 'rejected', reason: { code: 'NOT_FOUND' } });
+    expect((await getBill(deps, host, bill.id))!.bill.items.some((i) => i.id === item.id)).toBe(false);
   });
 
   it('unpacks a line into unclaimed single units, clearing its claims', async () => {

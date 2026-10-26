@@ -32,7 +32,7 @@ export async function parseReceipt(deps: Deps, host: BillHost, billId: string) {
   const draft = billDraftFromReceipt(receipt);
 
   return writeBill(deps, host, billId, (current) => {
-    // shortcut: two parses started at the very same moment could both pass this check and duplicate the items; the Scan button is disabled while parsing, and Mode B makes this a conditional write.
+    // Checked again on the fresh copy: a parse that finished meanwhile wins, and this one is refused.
     if (current.items.length > 0) throw new AppError('CONFLICT', 'This bill already has items');
     return {
       meta: {

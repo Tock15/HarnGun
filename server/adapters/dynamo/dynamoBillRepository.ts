@@ -92,7 +92,7 @@ export class DynamoBillRepository implements BillRepository {
     return Item.version as number;
   }
 
-  async update(billId: string, changes: BillChanges): Promise<boolean> {
+  async update(billId: string, changes: BillChanges, expectedVersion: number): Promise<boolean> {
     const pk = billPk(billId);
     const now = this.now();
     const createdAt = now.toISOString();
@@ -100,7 +100,7 @@ export class DynamoBillRepository implements BillRepository {
     const del = (SK: string): TransactItem => ({ Delete: { TableName: this.tableName, Key: { PK: pk, SK } } });
 
     return this.transact([
-      this.metadataUpdate(pk, changes, now),
+      this.metadataUpdate(pk, changes, expectedVersion, now),
       ...(changes.putItems ?? []).map((item) => put(itemRecord(billId, item))),
       ...(changes.deleteItemIds ?? []).map((id) => del(itemSk(id))),
       ...(changes.putParticipants ?? []).map((p) => put(participantRecord(billId, p))),
@@ -110,10 +110,10 @@ export class DynamoBillRepository implements BillRepository {
     ]);
   }
 
-  /** Bumps version and updatedAt, sets changed fields; fails the whole transaction if the bill is gone. */
-  private metadataUpdate(pk: string, changes: BillChanges, now: Date): TransactItem {
+  /** Bumps version and updatedAt, sets changed fields; fails the whole transaction if the bill is gone or not at `expectedVersion`. */
+  private metadataUpdate(pk: string, changes: BillChanges, expectedVersion: number, now: Date): TransactItem {
     const names: Record<string, string> = { '#version': 'version', '#updatedAt': 'updatedAt', '#expiresAt': TTL_ATTRIBUTE, '#pk': 'PK' };
-    const values: Record<string, unknown> = { ':one': 1, ':now': now.toISOString(), ':nowSeconds': toEpochSeconds(now) };
+    const values: Record<string, unknown> = { ':one': 1, ':expected': expectedVersion, ':now': now.toISOString(), ':nowSeconds': toEpochSeconds(now) };
     const sets = ['#updatedAt = :now'];
 
     for (const [field, value] of Object.entries(changes.meta ?? {})) {
@@ -130,7 +130,7 @@ export class DynamoBillRepository implements BillRepository {
         Key: { PK: pk, SK: METADATA_SK },
         UpdateExpression: `SET ${sets.join(', ')} ADD #version :one${changes.clearExpiry ? ' REMOVE #expiresAt' : ''}`,
         // An expired DRAFT may linger until TTL deletes it; treat it as gone.
-        ConditionExpression: 'attribute_exists(#pk) AND (attribute_not_exists(#expiresAt) OR #expiresAt > :nowSeconds)',
+        ConditionExpression: 'attribute_exists(#pk) AND #version = :expected AND (attribute_not_exists(#expiresAt) OR #expiresAt > :nowSeconds)',
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
       },
@@ -146,10 +146,10 @@ export class DynamoBillRepository implements BillRepository {
       } catch (error) {
         if (!(error instanceof TransactionCanceledException)) throw error;
         const reasons = error.CancellationReasons ?? [];
-        // The METADATA update is always first, so reason 0 is the "bill exists" check.
+        // The METADATA update is always first, so reason 0 is the "bill exists at this version" check.
         if (reasons[0]?.Code === 'ConditionalCheckFailed') return false;
-        // Every write bumps METADATA, so two writes to one bill at once cancel each other.
-        // Retrying is safe: all changes are idempotent.
+        // Two writes to one bill at once can cancel each other. Nothing was written, and the
+        // version check above refuses the retry if the other write landed in between.
         if (attempt >= MAX_ATTEMPTS || !reasons.some((r) => r.Code === 'TransactionConflict')) throw error;
         await new Promise((resolve) => setTimeout(resolve, 10 + Math.random() * 40 * attempt));
       }

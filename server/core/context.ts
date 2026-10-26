@@ -36,9 +36,13 @@ export async function loadOwnedBill(deps: Deps, host: BillHost, billId: string):
   return bill;
 }
 
+const MAX_WRITE_ATTEMPTS = 5;
+
 /**
  * The shape of every write: load the host's bill, let `decide` work out the changes (and refuse
  * if needed), apply them as one atomic write, then return the fresh bill view.
+ * The write only lands if the bill is still at the loaded version; otherwise it reloads and
+ * decides again, so a change is never based on a stale copy (optimistic locking).
  */
 export async function writeBill(
   deps: Deps,
@@ -46,7 +50,10 @@ export async function writeBill(
   billId: string,
   decide: (bill: Bill) => BillChanges,
 ): Promise<BillView> {
-  const bill = await loadOwnedBill(deps, host, billId);
-  if (!(await deps.bills.update(billId, decide(bill)))) throw new AppError('NOT_FOUND', 'Bill not found');
-  return billView(await loadOwnedBill(deps, host, billId));
+  for (let attempt = 1; attempt <= MAX_WRITE_ATTEMPTS; attempt++) {
+    // A bill deleted in the meantime fails here with NOT_FOUND.
+    const bill = await loadOwnedBill(deps, host, billId);
+    if (await deps.bills.update(billId, decide(bill), bill.version)) return billView(await loadOwnedBill(deps, host, billId));
+  }
+  throw new AppError('CONFLICT', 'The bill changed while saving. Try again.');
 }
