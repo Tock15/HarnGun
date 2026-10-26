@@ -6,8 +6,8 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> &
   value: number | null;
   /** Every keystroke that parses, for the live totals. */
   onLive?: (value: number | null) => void;
-  /** On blur, only if the value differs from when the field was focused. */
-  onCommit: (value: number | null) => void;
+  /** On blur, only if the value differs from when the field was focused. A falsy result (refused save) restores the old text. */
+  onCommit: (value: number | null) => unknown;
 };
 
 const show = (value: number | null) => (value === null ? '' : String(value / 100));
@@ -51,7 +51,10 @@ export function DecimalInput({ value, onLive, onCommit, signed = false, ...rest 
           setText(show(atFocus.current));
           onLive?.(atFocus.current);
         } else if (parsed !== atFocus.current) {
-          onCommit(parsed);
+          const before = atFocus.current;
+          void Promise.resolve(onCommit(parsed)).then((saved) => {
+            if (!saved && !focused.current) setText(show(before));
+          });
         }
       }}
     />
