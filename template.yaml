@@ -1,22 +1,162 @@
-Transform: AWS::Serverless-2016-10-31
+﻿Transform: AWS::Serverless-2016-10-31
 
 Description:
   "Split a restaurant bill with friends. Scan the receipt, check the items, tap who ate what, and each person gets their share with a PromptPay QR code."
 
+# Shared by all three functions; each function below adds or overrides only what differs.
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    CodeUri: ./
+    Handler: index.handler   # file index.mjs (built from server/lambda/index.ts), function `handler`
+    MemorySize: 512
+    Timeout: 5
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref BillsTable
+        S3_BUCKET: !Ref ReceiptsBucket
+        DEV_AUTH_SECRET_PARAM: /harngun/dev-auth-secret   # the name only; the value is read from SSM at cold start
+        MOCK_AI: "true"   # only ParseReceipt reads receipts; it overrides this below
+
 Resources:
-  HealthFunction:
+  # Everything that is quick DynamoDB work: session, health, bills, items, participants, claims.
+  BillsFunction:
     Type: AWS::Serverless::Function
+    Metadata: &esbuild
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - server/lambda/index.ts
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        Target: es2022
+        # Some bundled packages still call require(); ESM has no require unless we create one.
+        Banner:
+          - js=import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);
     Properties:
-      Runtime: nodejs24.x
-      Handler: index.handler
-      InlineCode: |
-        exports.handler = async() => ({ statusCode: 200, body: '{"status":"ok"}'});
+      Policies: 
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref BillsTable
+        - SSMParameterReadPolicy: 
+            ParameterName: harngun/dev-auth-secret
       Events:
         Health:
           Type: HttpApi
           Properties:
             Path: /api/health
             Method: GET
+        Session:
+          Type: HttpApi
+          Properties:
+            Path: /api/session
+            Method: POST
+        CreateBill:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills
+            Method: POST
+        GetBill:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}
+            Method: GET
+        UpdateBill:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}
+            Method: PATCH
+        AddItem:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/items
+            Method: POST
+        UpdateItem:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/items/{itemId}
+            Method: PATCH
+        DeleteItem:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/items/{itemId}
+            Method: DELETE
+        UnpackItem:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/items/{itemId}/unpack
+            Method: POST
+        AddParticipant:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/participants
+            Method: POST
+        UpdateParticipant:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/participants/{pid}
+            Method: PATCH
+        DeleteParticipant:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/participants/{pid}
+            Method: DELETE
+        Claim:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/claims/{itemId}/{pid}
+            Method: PUT
+        Unclaim:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/claims/{itemId}/{pid}
+            Method: DELETE
+
+  # Creates the bill and signs the browser's direct upload to S3.
+  UploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Metadata: *esbuild
+    Properties:
+      Policies: 
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref BillsTable
+        - S3WritePolicy: 
+            BucketName: !Ref ReceiptsBucket
+        - SSMParameterReadPolicy: 
+            ParameterName: harngun/dev-auth-secret
+      Events:
+        CreateUploadUrl:
+          Type: HttpApi
+          Properties:
+            Path: /api/receipts/upload-url
+            Method: POST
+
+  # The slow one: reads the photo from S3 and sends it to Gemini.
+  ParseReceiptFunction:
+    Type: AWS::Serverless::Function
+    Metadata: *esbuild
+    Properties:
+      Timeout: 29   # API Gateway gives up at 30 s, so stop just before it
+      Environment:
+        Variables:
+          MOCK_AI: "false"
+          GEMINI_API_KEY_PARAM: /harngun/gemini-api-key
+          GEMINI_MODEL: gemini-3.5-flash-lite
+      Policies:
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref BillsTable
+        - S3ReadPolicy: 
+            BucketName: !Ref ReceiptsBucket
+        - SSMParameterReadPolicy: 
+            ParameterName: harngun/dev-auth-secret
+        - SSMParameterReadPolicy: 
+            ParameterName: harngun/gemini-api-key
+      Events:
+        ParseReceipt:
+          Type: HttpApi
+          Properties:
+            Path: /api/receipts/{id}/parse
+            Method: POST
   BillsTable:
     Type: AWS::DynamoDB::Table
     Properties:

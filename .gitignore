@@ -30,3 +30,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Real receipt photos for manual testing (may hold personal data)
+test-photos/
