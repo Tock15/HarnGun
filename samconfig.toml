@@ -12,3 +12,4 @@ image_repositories = []
 
 [default.global.parameters]
 region = "ap-southeast-1"
+parameter_overrides = "CertificateArn=arn:aws:acm:us-east-1:978430483841:certificate/ac2aec5a-50ec-495c-aa4a-17464c91341b"
