@@ -1,5 +1,6 @@
 import { computeSplit, type Bill } from '@harngun/shared';
 import { describe, expect, it } from 'vitest';
+import { uploadDestination } from './compress';
 import { parseDecimal } from './DecimalInput';
 import { parseRoute } from './route';
 import { summaryText } from './screens/SettleStep';
@@ -67,5 +68,16 @@ describe('summaryText', () => {
     expect(summaryText(bill, computeSplit(bill))).toBe(
       ['🧾 Som Tam Nua: ฿300.00', '', 'Ann: ฿240.00', '  ส้มตำ ÷2 ฿60.00', '  ไก่ทอด ฿180.00', '', 'PromptPay 0812345678 (Koses)'].join('\n'),
     );
+  });
+});
+
+describe('uploadDestination', () => {
+  it('posts to real S3 at its own address', () => {
+    const url = 'https://harngun-receiptsbucket-x.s3.ap-southeast-1.amazonaws.com/';
+    expect(uploadDestination(url)).toBe(url);
+  });
+
+  it('posts to local storage through the page origin', () => {
+    expect(uploadDestination('http://localhost:8080/harngun-receipts')).toBe('/harngun-receipts');
   });
 });

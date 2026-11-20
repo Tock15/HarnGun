@@ -15,7 +15,9 @@
     "test:watch": "vitest --project unit",
     "test:integration": "vitest run --project integration",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test:ui": "vitest --ui --project unit"
+    "test:ui": "vitest --ui --project unit",
+    "sam:build": "sam build",
+    "deploy:frontend": "node scripts/deploy-frontend.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

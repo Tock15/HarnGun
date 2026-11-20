@@ -1,0 +1,15 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "harngun"
+resolve_s3 = true
+s3_prefix = "harngun"
+region = "ap-southeast-1"
+profile = "harngun"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+
+[default.global.parameters]
+region = "ap-southeast-1"
+parameter_overrides = "CertificateArn=arn:aws:acm:us-east-1:978430483841:certificate/ac2aec5a-50ec-495c-aa4a-17464c91341b"

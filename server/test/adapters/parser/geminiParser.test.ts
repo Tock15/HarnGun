@@ -40,7 +40,7 @@ describe('GeminiParser', () => {
       throw new DOMException('The operation timed out.', 'TimeoutError');
     }) as typeof fetch;
 
-    await expect(parserFor(fetchFn).parse(image)).rejects.toThrow(/did not answer within 45 s/);
+    await expect(parserFor(fetchFn).parse(image)).rejects.toThrow(/did not answer within 25 s/);
   });
 
   it('fails clearly on an HTTP error such as a rate limit', async () => {

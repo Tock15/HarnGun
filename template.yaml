@@ -1,0 +1,310 @@
+﻿Transform: AWS::Serverless-2016-10-31
+
+Description:
+  "Split a restaurant bill with friends. Scan the receipt, check the items, tap who ate what, and each person gets their share with a PromptPay QR code."
+
+
+Parameters:
+  CertificateArn:
+    Type: String
+    Description: ACM certificate for harngun.tock15.dev
+
+# Shared by all three functions; each function below adds or overrides only what differs.
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    CodeUri: ./
+    Handler: index.handler   # file index.mjs (built from server/lambda/index.ts), function `handler`
+    MemorySize: 512
+    Timeout: 5
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref BillsTable
+        S3_BUCKET: !Ref ReceiptsBucket
+        DEV_AUTH_SECRET_PARAM: /harngun/dev-auth-secret   # the name only; the value is read from SSM at cold start
+        MOCK_AI: "true"   # only ParseReceipt reads receipts; it overrides this below
+  HttpApi:
+    DefaultRouteSettings: 
+      ThrottlingRateLimit: 10
+      ThrottlingBurstLimit: 20
+    RouteSettings: 
+      "POST /api/receipts/{id}/parse":   
+        ThrottlingRateLimit: 1
+        ThrottlingBurstLimit: 2
+
+
+Resources:
+  # Everything that is quick DynamoDB work: session, health, bills, items, participants, claims.
+  BillsFunction:
+    Type: AWS::Serverless::Function
+    Metadata: &esbuild
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - server/lambda/index.ts
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        Target: es2022
+        # Some bundled packages still call require(); ESM has no require unless we create one.
+        Banner:
+          - js=import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);
+    Properties:
+      LoggingConfig: { LogGroup: !Ref BillsLogs }
+      Policies: 
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref BillsTable
+        - SSMParameterReadPolicy: 
+            ParameterName: harngun/dev-auth-secret
+      Events:
+        Health:
+          Type: HttpApi
+          Properties:
+            Path: /api/health
+            Method: GET
+        Session:
+          Type: HttpApi
+          Properties:
+            Path: /api/session
+            Method: POST
+        CreateBill:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills
+            Method: POST
+        GetBill:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}
+            Method: GET
+        UpdateBill:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}
+            Method: PATCH
+        AddItem:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/items
+            Method: POST
+        UpdateItem:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/items/{itemId}
+            Method: PATCH
+        DeleteItem:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/items/{itemId}
+            Method: DELETE
+        UnpackItem:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/items/{itemId}/unpack
+            Method: POST
+        AddParticipant:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/participants
+            Method: POST
+        UpdateParticipant:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/participants/{pid}
+            Method: PATCH
+        DeleteParticipant:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/participants/{pid}
+            Method: DELETE
+        Claim:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/claims/{itemId}/{pid}
+            Method: PUT
+        Unclaim:
+          Type: HttpApi
+          Properties:
+            Path: /api/bills/{id}/claims/{itemId}/{pid}
+            Method: DELETE
+
+  # Creates the bill and signs the browser's direct upload to S3.
+  UploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Metadata: *esbuild
+    Properties:
+      LoggingConfig: { LogGroup: !Ref UploadUrlLogs }
+      Policies: 
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref BillsTable
+        - S3WritePolicy: 
+            BucketName: !Ref ReceiptsBucket
+        - SSMParameterReadPolicy: 
+            ParameterName: harngun/dev-auth-secret
+      Events:
+        CreateUploadUrl:
+          Type: HttpApi
+          Properties:
+            Path: /api/receipts/upload-url
+            Method: POST
+
+  # The slow one: reads the photo from S3 and sends it to Gemini.
+  ParseReceiptFunction:
+    Type: AWS::Serverless::Function
+    Metadata: *esbuild
+    Properties:
+      LoggingConfig: { LogGroup: !Ref ParseReceiptLogs }
+      Timeout: 29   # API Gateway gives up at 30 s, so stop just before it
+      Environment:
+        Variables:
+          MOCK_AI: "false"
+          GEMINI_API_KEY_PARAM: /harngun/gemini-api-key
+          GEMINI_MODEL: gemini-3.5-flash-lite
+      Policies:
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref BillsTable
+        - S3ReadPolicy: 
+            BucketName: !Ref ReceiptsBucket
+        - SSMParameterReadPolicy: 
+            ParameterName: harngun/dev-auth-secret
+        - SSMParameterReadPolicy: 
+            ParameterName: harngun/gemini-api-key
+      Events:
+        ParseReceipt:
+          Type: HttpApi
+          Properties:
+            Path: /api/receipts/{id}/parse
+            Method: POST
+  BillsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+  ReceiptsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: deleteRule
+            Status: Enabled
+            ExpirationInDays: 7
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - POST
+            AllowedOrigins:
+              - https://harngun.tock15.dev
+              - http://localhost:5173
+            AllowedHeaders:
+              - "*"
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+  FrontendOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties: 
+      OriginAccessControlConfig:
+          Name: !Sub "${AWS::StackName}-frontend"
+          OriginAccessControlOriginType: s3
+          SigningBehavior: always
+          SigningProtocol: sigv4
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        Origins:
+          - Id: site
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+            S3OriginConfig: { OriginAccessIdentity: "" }
+          - Id: api
+            DomainName: !Sub "${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+        Aliases: 
+          - harngun.tock15.dev
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+  # Lambda's own log groups never expire; these keep 14 days.
+  BillsLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-bills
+      RetentionInDays: 14
+  UploadUrlLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-upload-url
+      RetentionInDays: 14
+  ParseReceiptLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-parse-receipt
+      RetentionInDays: 14
+
+Outputs:
+  ApiUrl:
+    Description: URL of the HTTP API
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  FrontendDomain:
+    Description: CloudFront domain, the target of the harngun CNAME at name.com
+    Value: !GetAtt FrontendDistribution.DomainName

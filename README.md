@@ -2,7 +2,7 @@
 
 Split a restaurant bill with friends. Scan the receipt, check the items, tap who ate what, and each person gets their share with a PromptPay QR code.
 
-The app runs as four Docker containers. The AI receipt reader is mocked by default, so no cloud account or API key is needed.
+The app runs as four Docker containers. The AI receipt reader is mocked by default, so no cloud account or API key is needed. The same code also deploys to AWS as a serverless app; see [Deploy to AWS](#deploy-to-aws).
 
 ## Quick start
 
@@ -88,12 +88,63 @@ GEMINI_MODEL=gemini-3.5-flash-lite
 
 Restart `npm run dev -w server`; the startup line names the parser. Development only: the Docker stack always uses the sample receipt.
 
+## Deploy to AWS
+
+```
+Browser ──▶ CloudFront (harngun.tock15.dev)
+              ├── /        ──▶ S3 frontend bucket (private, read through OAC)
+              └── /api/*   ──▶ API Gateway (HTTP API, throttled) ──▶ 3 Lambdas ──▶ DynamoDB
+Photos: browser ──▶ S3 receipts bucket directly (presigned POST)
+Receipt reading: ParseReceipt Lambda ──▶ Google Gemini API
+```
+
+Everything is one SAM stack defined in `template.yaml`. The three Lambdas share one bundle (`server/lambda/index.ts`) and differ only in their routes, permissions and timeouts: `UploadUrl` signs photo uploads, `ParseReceipt` reads receipts with Gemini, and `Bills` serves every other route.
+
+Requirements: Node.js, [AWS CLI v2](https://aws.amazon.com/cli/), [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html), a domain whose DNS you control, and a Gemini API key. On Windows, run `sam` from PowerShell. The commands use the AWS profile `harngun` and region `ap-southeast-1` (set in `samconfig.toml`).
+
+**One-time setup**
+
+1. Sign in: `aws login --profile harngun`.
+2. Store the two secrets in SSM Parameter Store. The Lambdas read them at cold start, so they are never in the template or the code.
+   ```bash
+   aws ssm put-parameter --name /harngun/dev-auth-secret --type SecureString --value "<a long random string>" --profile harngun
+   aws ssm put-parameter --name /harngun/gemini-api-key --type SecureString --value "<your Gemini key>" --profile harngun
+   ```
+3. Request a TLS certificate. It must be in `us-east-1`, because CloudFront only reads certificates from there:
+   ```bash
+   aws acm request-certificate --domain-name harngun.tock15.dev --validation-method DNS --region us-east-1 --profile harngun
+   ```
+   Add the CNAME record from `aws acm describe-certificate` at your DNS provider, wait for the status `ISSUED`, and put the certificate ARN in `samconfig.toml` as `parameter_overrides = "CertificateArn=..."`. To use another domain, also change `Aliases` in `template.yaml`.
+
+**Deploy**
+
+```bash
+npm run sam:build         # bundle the Lambdas; run it after every template change too
+sam deploy                # shows a changeset and asks before applying it
+npm run deploy:frontend   # build the client, upload it to S3, clear the CloudFront cache
+```
+
+After the first deploy, point a CNAME for your domain at the `FrontendDomain` stack output (`dxxxx.cloudfront.net`).
+
+Check a template with `sam validate --lint`; plain `sam validate` does not check property names on non-SAM resources.
+
+**Limits and costs**
+
+* API Gateway allows 10 requests/s (burst 20), and 1/s on receipt parsing. A Gemini call is cut off at 25 s, because API Gateway ends every request at 30 s.
+* Lambda logs are kept for 14 days.
+* At hobby traffic the stack stays within the AWS free allowances.
+* Emergency stop: `aws apigatewayv2 update-stage --api-id <api id> --stage-name '$default' --default-route-settings ThrottlingRateLimit=0,ThrottlingBurstLimit=0 --profile harngun`.
+
+**Remove everything:** empty both buckets with `aws s3 rm s3://<bucket> --recursive`, then run `sam delete`. This deletes the bills table and its data.
+
 ## Repository layout
 
 ```
-client/   React app (Vite), its Dockerfile and nginx.conf
-server/   API: core logic, ports and adapters (DynamoDB, S3, AI parser), Express entry point, Dockerfile
-shared/   Money math, bill splitting, PromptPay payload; used by both client and server
+client/        React app (Vite), its Dockerfile and nginx.conf
+server/        API: core logic, ports and adapters (DynamoDB, S3, AI parser), Express and Lambda entry points, Dockerfile
+shared/        Money math, bill splitting, PromptPay payload; used by both client and server
+template.yaml  AWS SAM stack: Lambdas, API Gateway, DynamoDB, S3, CloudFront
+scripts/       deploy-frontend.mjs (uploads the client to AWS)
 ```
 
 ## Troubleshooting

@@ -21,12 +21,22 @@ export async function compressPhoto(file: File): Promise<Blob> {
   return blob;
 }
 
-/** Presigned POST straight to storage, through the same-origin bucket path (Vite proxy / Nginx). */
+/**
+ * Where the browser sends the photo. Real S3 (AWS) takes it at its own address, allowed by the
+ * bucket's CORS rule. Local storage is reached through the page's own origin (Vite proxy / Nginx),
+ * so a phone on the Wi-Fi works even though the URL was signed for localhost.
+ */
+export const uploadDestination = (signedUrl: string) => {
+  const url = new URL(signedUrl);
+  return url.hostname.endsWith('.amazonaws.com') ? signedUrl : url.pathname;
+};
+
+/** Presigned POST straight to storage. */
 export async function uploadPhoto(target: { url: string; fields: Record<string, string> }, photo: Blob) {
   const form = new FormData();
   for (const [key, value] of Object.entries(target.fields)) form.append(key, value);
   form.append('file', photo); // must come after the policy fields
-  const res = await fetch(new URL(target.url).pathname, { method: 'POST', body: form }).catch(() => {
+  const res = await fetch(uploadDestination(target.url), { method: 'POST', body: form }).catch(() => {
     throw new Error('Upload failed. Check your connection and try again.');
   });
   if (!res.ok) throw new Error(`Upload failed (${res.status}). Try again.`);
