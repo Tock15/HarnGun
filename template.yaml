@@ -17,6 +17,14 @@ Globals:
         S3_BUCKET: !Ref ReceiptsBucket
         DEV_AUTH_SECRET_PARAM: /harngun/dev-auth-secret   # the name only; the value is read from SSM at cold start
         MOCK_AI: "true"   # only ParseReceipt reads receipts; it overrides this below
+  HttpApi:
+    DefaultRouteSettings: 
+      ThrottlingRateLimit: 10
+      ThrottlingBurstLimit: 20
+    RouteSettings: 
+      "POST /api/receipts/{id}/parse":   
+        ThrottlingRateLimit: 1
+        ThrottlingBurstLimit: 2
 
 Resources:
   # Everything that is quick DynamoDB work: session, health, bills, items, participants, claims.
