@@ -17,6 +17,53 @@ Resources:
           Properties:
             Path: /api/health
             Method: GET
+  BillsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+  ReceiptsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: deleteRule
+            Status: Enabled
+            ExpirationInDays: 7
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - POST
+            AllowedOrigins:
+              - https://harngun.tock15.dev
+              - http://localhost:5173
+            AllowedHeaders:
+              - "*"
 Outputs:
   ApiUrl:
     Description: URL of the HTTP API
