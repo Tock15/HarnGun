@@ -1,0 +1,23 @@
+Transform: AWS::Serverless-2016-10-31
+
+Description:
+  "Split a restaurant bill with friends. Scan the receipt, check the items, tap who ate what, and each person gets their share with a PromptPay QR code."
+
+Resources:
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      Handler: index.handler
+      InlineCode: |
+        exports.handler = async() => ({ statusCode: 200, body: '{"status":"ok"}'});
+      Events:
+        Health:
+          Type: HttpApi
+          Properties:
+            Path: /api/health
+            Method: GET
+Outputs:
+  ApiUrl:
+    Description: URL of the HTTP API
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
