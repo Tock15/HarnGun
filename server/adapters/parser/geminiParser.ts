@@ -5,8 +5,8 @@ import { RECEIPT_RULES, ReceiptParseError, receiptJsonSchema, receiptSchema } fr
 const PROMPT = `Read this Thai restaurant receipt.
 ${RECEIPT_RULES}`;
 
-// Below Nginx's default 60 s proxy_read_timeout, so the app's own error reaches the user instead of a 504.
-const TIMEOUT_MS = 45_000;
+// Below the ParseReceipt Lambda's 29 s timeout (and Nginx's 60 s), so the app's own error reaches the user instead of a bare 500.
+const TIMEOUT_MS = 25_000;
 
 /** The parts of a generateContent reply this parser reads. */
 interface GenerateContentResponse {
