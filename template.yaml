@@ -50,6 +50,7 @@ Resources:
         Banner:
           - js=import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);
     Properties:
+      LoggingConfig: { LogGroup: !Ref BillsLogs }
       Policies: 
         - DynamoDBCrudPolicy: 
             TableName: !Ref BillsTable
@@ -132,6 +133,7 @@ Resources:
     Type: AWS::Serverless::Function
     Metadata: *esbuild
     Properties:
+      LoggingConfig: { LogGroup: !Ref UploadUrlLogs }
       Policies: 
         - DynamoDBCrudPolicy: 
             TableName: !Ref BillsTable
@@ -151,6 +153,7 @@ Resources:
     Type: AWS::Serverless::Function
     Metadata: *esbuild
     Properties:
+      LoggingConfig: { LogGroup: !Ref ParseReceiptLogs }
       Timeout: 29   # API Gateway gives up at 30 s, so stop just before it
       Environment:
         Variables:
@@ -281,6 +284,22 @@ Resources:
             Condition:
               StringEquals:
                 AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+  # Lambda's own log groups never expire; these keep 14 days.
+  BillsLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-bills
+      RetentionInDays: 14
+  UploadUrlLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-upload-url
+      RetentionInDays: 14
+  ParseReceiptLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-parse-receipt
+      RetentionInDays: 14
 
 Outputs:
   ApiUrl:
